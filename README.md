@@ -1,10 +1,10 @@
-### An online clipboard application built in Go
+## An online clipboard application built in Go
 
 ### How to run?
 run command below in shell:
 
 ```shell
-git clone 
+git clone https://github.com/billlee978/Clipboard.git
 ```
 
 then cd into the main folder
