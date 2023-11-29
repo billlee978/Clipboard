@@ -4,12 +4,11 @@ import (
 	"ClipBoard/static"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"io"
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -58,43 +57,14 @@ func main() {
 	r.GET("download/file/:token/:fileName", func(c *gin.Context) {
 		token := c.Param("token")
 		fileName := c.Param("fileName")
-		fileDst := "./upload/" + token + "/" + fileName
-		file, err := os.Open(fileDst)
-		if err != nil {
-			c.AbortWithError(404, err)
-			return
-		}
-		defer file.Close()
-		stat, err := file.Stat()
-		if err != nil {
-			c.AbortWithError(404, err)
-			return
-		}
+		escapedFileName := url.PathEscape(fileName)
 		// 设置响应头，告诉浏览器该文件应该被下载
-		c.Writer.Header().Set("Content-Disposition", "attachment; filename="+fileName)
-		c.Writer.Header().Set("Content-Type", "application/octet-stream")
-		c.Writer.Header().Set("Content-Length", strconv.FormatInt(stat.Size(), 10))
-		c.Writer.Flush()
-		var offset int64 = 0
-		var bufsize int64 = 1024 * 1024 // 1MB
-		buf := make([]byte, bufsize)
-		for {
-			n, err := file.ReadAt(buf, offset)
-			if err != nil && err != io.EOF {
-				log.Println("read file error", err)
-				break
-			}
-			if n == 0 {
-				break
-			}
-			_, err = c.Writer.Write(buf[:n])
-			if err != nil {
-				log.Println("write file error", err)
-				break
-			}
-			offset += int64(n)
-		}
-		c.Writer.Flush()
+		c.Header("Content-Description", "File Transfer")
+		c.Header("Content-Transfer-Encoding", "binary")
+		// 防止乱码
+		c.Header("Content-Disposition", "attachment; filename*=utf-8''"+escapedFileName)
+		c.Header("Content-Type", "application/octet-stream")
+		c.File("./upload/" + token + "/" + fileName)
 	})
 
 	r.GET("delete/file/:token/:fileName", func(c *gin.Context) {
